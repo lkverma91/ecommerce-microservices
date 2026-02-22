@@ -63,9 +63,9 @@ spring:
                 redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:10}
                 redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:20}
 
-# CORS - set CORS_ALLOWED_ORIGINS env (e.g. https://app.example.com)
+# CORS - set CORS_ALLOWED_ORIGINS env (prod: https://app.example.com)
 cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,PATCH,OPTIONS}
   allowed-headers: ${CORS_ALLOWED_HEADERS:*}
   max-age: ${CORS_MAX_AGE:3600}

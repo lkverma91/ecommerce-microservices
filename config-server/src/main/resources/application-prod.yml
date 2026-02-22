@@ -1,8 +1,8 @@
 # ===========================================
 # Config Server - PRODUCTION Profile
 # ===========================================
-# Native: mount config-repo at /app/config-repo in Docker
-# Git: set CONFIG_GIT_URI and CONFIG_GIT_LABEL env vars
+# Uses classpath (config-repo bundled in JAR)
+# For external config: mount volume at /app/config-repo and set search-locations to file:///app/config-repo
 
 server:
   port: 8888
@@ -12,7 +12,7 @@ spring:
     config:
       server:
         native:
-          search-locations: file:///app/config-repo
+          search-locations: classpath:/config-repo
 
 logging:
   level:
