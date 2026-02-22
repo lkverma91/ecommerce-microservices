@@ -257,6 +257,18 @@ services:
       - postgres-payment
       - kafka
 
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+
   # API Gateway
   api-gateway:
     build: ./api-gateway

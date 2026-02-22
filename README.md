@@ -14,6 +14,7 @@ Spring Boot microservices with Eureka, API Gateway, Kafka, PostgreSQL, OpenFeign
 | Order Service | 9004 | Order creation, Feign + Kafka |
 | Inventory Service | 9005 | Stock, Kafka consumer |
 | Payment Service | 9006 | Payments, Kafka consumer |
+| Frontend | 3000 / 5173 | React (Vite) - dev: 5173, Docker: 3000 |
 
 ## Run with Docker Compose
 
@@ -181,6 +182,16 @@ Payments are created asynchronously when an order is placed (Kafka consumer).
 - OpenFeign, Kafka
 - Docker, Docker Compose
 - Zipkin (tracing), Redis (rate limiting)
+
+## Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev   # http://localhost:5173
+```
+
+See [frontend/README.md](frontend/README.md) for details.
 
 ## Production
 
