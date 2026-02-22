@@ -1,0 +1,8 @@
+server:
+  port: 9004
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5434/order_db
+  kafka:
+    bootstrap-servers: localhost:9092

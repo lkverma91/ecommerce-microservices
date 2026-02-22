@@ -1,0 +1,37 @@
+# ===========================================
+# Eureka Server - Default Configuration
+# ===========================================
+# Base config shared across all profiles.
+# Profile-specific overrides go in application-{profile}.yml
+
+spring:
+  application:
+    name: eureka-server
+
+# Eureka Server Configuration
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    # Eureka Server does not need to fetch registry from another Eureka (it IS the registry)
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      # Dashboard and API URL - where clients register
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    # Enable self-preservation: in network partition, don't evict instances
+    # Set false in dev for faster failure detection
+    enable-self-preservation: false
+    # Eviction task runs every 60 seconds to remove stale instances
+    eviction-interval-timer-in-ms: 5000
+
+# Actuator - expose health for Docker/K8s
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized

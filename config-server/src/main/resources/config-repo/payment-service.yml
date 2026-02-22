@@ -1,0 +1,11 @@
+# Payment Service - default config
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5436/payment_db
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+  kafka:
+    bootstrap-servers: localhost:9092

@@ -1,0 +1,19 @@
+# ===========================================
+# Config Server - PRODUCTION Profile
+# ===========================================
+# Native: mount config-repo at /app/config-repo in Docker
+# Git: set CONFIG_GIT_URI and CONFIG_GIT_LABEL env vars
+
+server:
+  port: 8888
+
+spring:
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: file:///app/config-repo
+
+logging:
+  level:
+    org.springframework.cloud.config: WARN

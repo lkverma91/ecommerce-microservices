@@ -1,0 +1,255 @@
+version: "3.8"
+
+services:
+  # PostgreSQL databases - one per service
+  postgres-user:
+    image: postgres:16-alpine
+    container_name: postgres-user
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_user_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-product:
+    image: postgres:16-alpine
+    container_name: postgres-product
+    environment:
+      POSTGRES_DB: product_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_product_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-order:
+    image: postgres:16-alpine
+    container_name: postgres-order
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_order_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-inventory:
+    image: postgres:16-alpine
+    container_name: postgres-inventory
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_inventory_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-payment:
+    image: postgres:16-alpine
+    container_name: postgres-payment
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_payment_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+  # Eureka Server
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+  # Config Server
+  config-server:
+    build: ./config-server
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      - eureka-server
+
+  # User Service
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    hostname: user-service
+    ports:
+      - "9002:9002"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      EUREKA_URI: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: user-service
+      DATABASE_URL: jdbc:postgresql://postgres-user:5432/user_db
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+    depends_on:
+      - eureka-server
+      - postgres-user
+
+  # Product Service
+  product-service:
+    build: ./product-service
+    container_name: product-service
+    hostname: product-service
+    ports:
+      - "9003:9003"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      EUREKA_URI: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: product-service
+      DATABASE_URL: jdbc:postgresql://postgres-product:5432/product_db
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+    depends_on:
+      - eureka-server
+      - postgres-product
+
+  # Inventory Service
+  inventory-service:
+    build: ./inventory-service
+    container_name: inventory-service
+    hostname: inventory-service
+    ports:
+      - "9005:9005"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      EUREKA_URI: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: inventory-service
+      DATABASE_URL: jdbc:postgresql://postgres-inventory:5432/inventory_db
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      - eureka-server
+      - postgres-inventory
+      - kafka
+
+  # Order Service
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    hostname: order-service
+    ports:
+      - "9004:9004"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      EUREKA_URI: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: order-service
+      DATABASE_URL: jdbc:postgresql://postgres-order:5432/order_db
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      - eureka-server
+      - postgres-order
+      - kafka
+      - user-service
+      - product-service
+      - inventory-service
+
+  # Payment Service
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    hostname: payment-service
+    ports:
+      - "9006:9006"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      EUREKA_URI: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: payment-service
+      DATABASE_URL: jdbc:postgresql://postgres-payment:5432/payment_db
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      - eureka-server
+      - postgres-payment
+      - kafka
+
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_URI: http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+      - user-service
+      - product-service
+      - order-service
+      - inventory-service
+      - payment-service
+
+volumes:
+  postgres_user_data:
+  postgres_product_data:
+  postgres_order_data:
+  postgres_inventory_data:
+  postgres_payment_data:

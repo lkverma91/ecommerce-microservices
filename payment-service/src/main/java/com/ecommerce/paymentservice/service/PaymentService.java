@@ -1,0 +1,65 @@
+package com.ecommerce.paymentservice.service;
+
+import com.ecommerce.paymentservice.dto.OrderPlacedEvent;
+import com.ecommerce.paymentservice.dto.PaymentResponse;
+import com.ecommerce.paymentservice.entity.Payment;
+import com.ecommerce.paymentservice.entity.Payment.PaymentStatus;
+import com.ecommerce.paymentservice.exception.ResourceNotFoundException;
+import com.ecommerce.paymentservice.repository.PaymentRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class PaymentService {
+
+    private final PaymentRepository paymentRepository;
+
+    @Transactional
+    public void processOrderPlaced(OrderPlacedEvent event) {
+        Payment payment = Payment.builder()
+                .orderId(event.getOrderId())
+                .userId(event.getUserId())
+                .amount(BigDecimal.valueOf(event.getTotalAmount()))
+                .status(PaymentStatus.COMPLETED)
+                .transactionId("TXN-" + UUID.randomUUID())
+                .build();
+        paymentRepository.save(payment);
+    }
+
+    public PaymentResponse getPaymentById(Long id) {
+        Payment payment = paymentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found with id: " + id));
+        return mapToResponse(payment);
+    }
+
+    public List<PaymentResponse> getPaymentsByOrderId(Long orderId) {
+        return paymentRepository.findByOrderId(orderId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<PaymentResponse> getPaymentsByUserId(Long userId) {
+        return paymentRepository.findByUserId(userId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    private PaymentResponse mapToResponse(Payment payment) {
+        return PaymentResponse.builder()
+                .id(payment.getId())
+                .orderId(payment.getOrderId())
+                .userId(payment.getUserId())
+                .amount(payment.getAmount())
+                .status(payment.getStatus().name())
+                .transactionId(payment.getTransactionId())
+                .createdAt(payment.getCreatedAt())
+                .build();
+    }
+}
