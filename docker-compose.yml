@@ -87,6 +87,27 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis - for API Gateway rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Zipkin - distributed tracing
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    environment:
+      - STORAGE_TYPE=mem
+
   # Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -144,6 +165,7 @@ services:
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: user-service
       DATABASE_URL: jdbc:postgresql://postgres-user:5432/user_db
+      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
     depends_on:
@@ -164,6 +186,7 @@ services:
       DATABASE_URL: jdbc:postgresql://postgres-product:5432/product_db
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
+      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
     depends_on:
       - eureka-server
       - postgres-product
@@ -183,6 +206,7 @@ services:
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
     depends_on:
       - eureka-server
       - postgres-inventory
@@ -203,6 +227,7 @@ services:
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
     depends_on:
       - eureka-server
       - postgres-order
@@ -226,6 +251,7 @@ services:
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
     depends_on:
       - eureka-server
       - postgres-payment
@@ -235,11 +261,18 @@ services:
   api-gateway:
     build: ./api-gateway
     container_name: api-gateway
+    hostname: api-gateway
     ports:
       - "8080:8080"
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       EUREKA_URI: http://eureka-server:8761/eureka/
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
     depends_on:
+      - redis
       - eureka-server
       - user-service
       - product-service

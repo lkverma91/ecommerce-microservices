@@ -1,0 +1,16 @@
+# Shared prod config - all services
+# Override via env: EUREKA_URI, DATABASE_URL, JWT_SECRET, ZIPKIN_URL
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI}
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_PROBABILITY:0.1}
+
+logging:
+  level:
+    com.ecommerce: INFO
+    root: WARN

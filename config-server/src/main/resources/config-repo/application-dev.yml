@@ -1,0 +1,14 @@
+# Shared dev config - all services
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  level:
+    com.ecommerce: DEBUG

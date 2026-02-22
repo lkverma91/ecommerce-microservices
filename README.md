@@ -18,7 +18,11 @@ Spring Boot microservices with Eureka, API Gateway, Kafka, PostgreSQL, OpenFeign
 ## Run with Docker Compose
 
 ```bash
+# Start all services (includes Redis, Zipkin)
 docker-compose up -d
+
+# With custom env (e.g. JWT_SECRET)
+JWT_SECRET=your-secret docker-compose up -d
 ```
 
 Start infra only (DBs + Kafka):
@@ -176,3 +180,11 @@ Payments are created asynchronously when an order is placed (Kafka consumer).
 - Eureka, Spring Cloud Gateway
 - OpenFeign, Kafka
 - Docker, Docker Compose
+- Zipkin (tracing), Redis (rate limiting)
+
+## Production
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for:
+- AWS EC2 deployment
+- Environment variable configuration
+- Scaling and security
