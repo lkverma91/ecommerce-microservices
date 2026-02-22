@@ -16,6 +16,10 @@ Spring Boot microservices with Eureka, API Gateway, Kafka, PostgreSQL, OpenFeign
 | Payment Service | 9006 | Payments, Kafka consumer |
 | Frontend | 3000 / 5173 | React (Vite) - dev: 5173, Docker: 3000 |
 
+## Quick Start
+
+See **[RUNNING_GUIDE.md](RUNNING_GUIDE.md)** for step-by-step instructions from scratch.
+
 ## Run with Docker Compose
 
 ```bash
@@ -192,6 +196,11 @@ npm run dev   # http://localhost:5173
 ```
 
 See [frontend/README.md](frontend/README.md) for details.
+
+## Integration & Testing
+
+- **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** — Request flow, JWT, Kafka, Postman, testing, monitoring, scaling, CI/CD
+- **Postman** — Import `postman/E-commerce-API.postman_collection.json`
 
 ## Production
 
