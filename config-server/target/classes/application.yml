@@ -1,0 +1,28 @@
+# ===========================================
+# Config Server - Default Configuration
+# ===========================================
+
+spring:
+  application:
+    name: config-server
+  # Config Server can use native (filesystem) or git backend
+  cloud:
+    config:
+      server:
+        # Native: serve from classpath or file path
+        native:
+          search-locations: classpath:/config-repo
+        # Override with 'git' profile for production (Git backend)
+        # git:
+        #   uri: ${CONFIG_GIT_URI}
+        #   default-label: main
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized

@@ -12,7 +12,6 @@ import java.util.List;
 @RequestMapping("/payments")
 @RequiredArgsConstructor
 public class PaymentController {
-
     private final PaymentService paymentService;
 
     @GetMapping("/{id}")
@@ -29,4 +28,6 @@ public class PaymentController {
     public ResponseEntity<List<PaymentResponse>> getPaymentsByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(paymentService.getPaymentsByUserId(userId));
     }
+
+
 }

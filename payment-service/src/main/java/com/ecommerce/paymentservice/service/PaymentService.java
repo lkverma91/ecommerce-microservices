@@ -21,7 +21,13 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
 
-    @Transactional
+    @Transactional    //explain @Transactional is a Spring annotation that indicates that the annotated method
+    // should be executed within a transactional context. This means that all operations performed within the method
+    // will be part of a single transaction. If any operation fails (e.g., an exception is thrown), the entire transaction
+    // will be rolled back, ensuring data integrity. In the context of the processOrderPlaced method,
+    // it ensures that if saving the payment fails for any reason, any changes made to the database during that method execution
+    // will be undone, preventing partial updates and maintaining consistency in the payment records.
+
     public void processOrderPlaced(OrderPlacedEvent event) {
         Payment payment = Payment.builder()
                 .orderId(event.getOrderId())

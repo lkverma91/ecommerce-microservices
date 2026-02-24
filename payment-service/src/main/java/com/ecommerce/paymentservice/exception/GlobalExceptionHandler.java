@@ -9,10 +9,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
 
-@RestControllerAdvice
+@RestControllerAdvice // Global exception handler for the Payment Service
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ResourceNotFoundException.class)
+    @ExceptionHandler(ResourceNotFoundException.class)// Handle ResourceNotFoundException and return a 404 response
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(buildError(HttpStatus.NOT_FOUND, ex.getMessage(), req));
     }
@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
                 .error(status.getReasonPhrase())
                 .message(message)
                 .path(req != null ? req.getRequestURI() : null)
-                .traceId(MDC.get("traceId"))
+                .traceId(MDC.get("traceId")) //what is mdc https://www.baeldung.com/spring-mvc-exceptionhandler-best-practices#1-use-mdc-to-log-trace-ids
                 .build();
     }
 }

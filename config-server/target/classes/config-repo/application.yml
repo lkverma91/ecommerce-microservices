@@ -1,0 +1,11 @@
+# ===========================================
+# Shared config for ALL services
+# ===========================================
+# These values are merged with service-specific config
+# when a service requests its configuration
+
+# Common placeholders - override per service
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}

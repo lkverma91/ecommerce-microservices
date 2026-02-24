@@ -1,0 +1,11 @@
+# Inventory Service - default config
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5435/inventory_db
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+  kafka:
+    bootstrap-servers: localhost:9092

@@ -20,18 +20,18 @@ WORKDIR /app
 # Install wget for healthcheck
 RUN apk add --no-cache wget
 
+# Copy JAR from builder
+COPY --from=builder /app/target/*.jar app.jar
+
 # Create non-root user for security
 RUN addgroup -S eureka && adduser -S eureka -G eureka
 USER eureka
 
-# Copy JAR from builder
-COPY --from=builder /app/target/*.jar app.jar
-
 # Expose Eureka port
 EXPOSE 8761
 
-# Health check - Eureka exposes /actuator/health
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget -qO- http://localhost:8761/actuator/health || exit 1
+## Health check - Eureka exposes /actuator/health
+#HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+#  CMD wget -qO- http://localhost:8761/actuator/health || exit 1
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

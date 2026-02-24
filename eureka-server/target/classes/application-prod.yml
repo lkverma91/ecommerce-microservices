@@ -1,0 +1,27 @@
+# ===========================================
+# Eureka Server - PRODUCTION Profile
+# ===========================================
+# Used in Docker/Kubernetes - hostname typically comes from env
+# Enable self-preservation for production stability
+
+server:
+  port: 8761
+
+eureka:
+  instance:
+    # In Docker/K8s, use env: EUREKA_INSTANCE_HOSTNAME or service name
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    prefer-ip-address: true
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    # In prod, keep instances during network blips
+    enable-self-preservation: true
+    eviction-interval-timer-in-ms: 60000
+
+# Reduce log noise in production
+logging:
+  level:
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN

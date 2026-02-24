@@ -1,0 +1,8 @@
+server:
+  port: 9005
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5435/inventory_db
+  kafka:
+    bootstrap-servers: localhost:9092

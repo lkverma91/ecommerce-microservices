@@ -1,0 +1,8 @@
+server:
+  port: 9006
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5436/payment_db
+  kafka:
+    bootstrap-servers: localhost:9092

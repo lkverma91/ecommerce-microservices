@@ -1,0 +1,19 @@
+# ===========================================
+# Config Server - PRODUCTION Profile
+# ===========================================
+# Uses classpath (config-repo bundled in JAR)
+# For external config: mount volume at /app/config-repo and set search-locations to file:///app/config-repo
+
+server:
+  port: 8888
+
+spring:
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/config-repo
+
+logging:
+  level:
+    org.springframework.cloud.config: WARN

@@ -1,0 +1,9 @@
+# Product Service - default config
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/product_db
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update

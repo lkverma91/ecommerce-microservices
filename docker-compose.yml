@@ -1,300 +1,385 @@
-version: "3.8"
-
 services:
-  # PostgreSQL databases - one per service
-  postgres-user:
-    image: postgres:16-alpine
-    container_name: postgres-user
+
+  # ============================================================
+  # INFRASTRUCTURE — Database (single instance, multiple DBs)
+  # ============================================================
+
+  postgres:
+    image: postgres:16.2-alpine
+    container_name: postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: user_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - postgres_user_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    networks:
+      - db-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
+      interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  postgres-product:
-    image: postgres:16-alpine
-    container_name: postgres-product
-    environment:
-      POSTGRES_DB: product_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_product_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+  # ============================================================
+  # INFRASTRUCTURE — Messaging & Caching
+  # ============================================================
 
-  postgres-order:
-    image: postgres:16-alpine
-    container_name: postgres-order
-    environment:
-      POSTGRES_DB: order_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5434:5432"
-    volumes:
-      - postgres_order_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  postgres-inventory:
-    image: postgres:16-alpine
-    container_name: postgres-inventory
-    environment:
-      POSTGRES_DB: inventory_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5435:5432"
-    volumes:
-      - postgres_inventory_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  postgres-payment:
-    image: postgres:16-alpine
-    container_name: postgres-payment
-    environment:
-      POSTGRES_DB: payment_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5436:5432"
-    volumes:
-      - postgres_payment_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  # Redis - for API Gateway rate limiting
   redis:
-    image: redis:7-alpine
+    image: redis:7.2-alpine
     container_name: redis
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend-net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
       timeout: 3s
       retries: 5
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Zipkin - distributed tracing
-  zipkin:
-    image: openzipkin/zipkin:latest
-    container_name: zipkin
-    ports:
-      - "9411:9411"
-    environment:
-      - STORAGE_TYPE=mem
-
-  # Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
+    restart: unless-stopped
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
+    networks:
+      - backend-net
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/2181' 2>/dev/null && echo ok" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
+    restart: unless-stopped
     depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-      - "29092:29092"
+      zookeeper:
+        condition: service_healthy
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - backend-net
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Eureka Server
+  # ============================================================
+  # INFRASTRUCTURE — Observability
+  # ============================================================
+
+  zipkin:
+    image: openzipkin/zipkin:3.4
+    container_name: zipkin
+    restart: unless-stopped
+    environment:
+      STORAGE_TYPE: ${ZIPKIN_STORAGE_TYPE:-mem}
+    networks:
+      - backend-net
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:9411/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================================
+  # PLATFORM — Service Discovery & Configuration
+  # ============================================================
+
   eureka-server:
     build: ./eureka-server
-    container_name: eureka-server
-    ports:
-      - "8761:8761"
+    hostname: eureka-server
+    restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+    networks:
+      - backend-net
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Config Server
   config-server:
     build: ./config-server
-    container_name: config-server
-    ports:
-      - "8888:8888"
+    hostname: config-server
+    restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      EUREKA_URI: http://eureka-server:8761/eureka/
     depends_on:
-      - eureka-server
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - backend-net
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # User Service
+  # ============================================================
+  # APPLICATION SERVICES
+  # ============================================================
+
   user-service:
     build: ./user-service
-    container_name: user-service
     hostname: user-service
-    ports:
-      - "9002:9002"
+    restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: user-service
-      DATABASE_URL: jdbc:postgresql://postgres-user:5432/user_db
+      DATABASE_URL: jdbc:postgresql://postgres:5432/user_db
+      DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
-      DATABASE_USERNAME: postgres
-      DATABASE_PASSWORD: postgres
     depends_on:
-      - eureka-server
-      - postgres-user
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - db-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Product Service
   product-service:
     build: ./product-service
-    container_name: product-service
     hostname: product-service
-    ports:
-      - "9003:9003"
+    restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: product-service
-      DATABASE_URL: jdbc:postgresql://postgres-product:5432/product_db
-      DATABASE_USERNAME: postgres
-      DATABASE_PASSWORD: postgres
+      DATABASE_URL: jdbc:postgresql://postgres:5432/product_db
+      DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
     depends_on:
-      - eureka-server
-      - postgres-product
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - db-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Inventory Service
   inventory-service:
     build: ./inventory-service
-    container_name: inventory-service
     hostname: inventory-service
-    ports:
-      - "9005:9005"
+    restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: inventory-service
-      DATABASE_URL: jdbc:postgresql://postgres-inventory:5432/inventory_db
-      DATABASE_USERNAME: postgres
-      DATABASE_PASSWORD: postgres
+      DATABASE_URL: jdbc:postgresql://postgres:5432/inventory_db
+      DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
     depends_on:
-      - eureka-server
-      - postgres-inventory
-      - kafka
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - db-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Order Service
   order-service:
     build: ./order-service
-    container_name: order-service
     hostname: order-service
-    ports:
-      - "9004:9004"
+    restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: order-service
-      DATABASE_URL: jdbc:postgresql://postgres-order:5432/order_db
-      DATABASE_USERNAME: postgres
-      DATABASE_PASSWORD: postgres
+      DATABASE_URL: jdbc:postgresql://postgres:5432/order_db
+      DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
     depends_on:
-      - eureka-server
-      - postgres-order
-      - kafka
-      - user-service
-      - product-service
-      - inventory-service
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - db-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Payment Service
   payment-service:
     build: ./payment-service
-    container_name: payment-service
     hostname: payment-service
-    ports:
-      - "9006:9006"
+    restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: payment-service
-      DATABASE_URL: jdbc:postgresql://postgres-payment:5432/payment_db
-      DATABASE_USERNAME: postgres
-      DATABASE_PASSWORD: postgres
+      DATABASE_URL: jdbc:postgresql://postgres:5432/payment_db
+      DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
     depends_on:
-      - eureka-server
-      - postgres-payment
-      - kafka
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - db-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Frontend
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        VITE_API_BASE_URL: /api
-    container_name: frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - api-gateway
+  # ============================================================
+  # EDGE — API Gateway & Frontend
+  # ============================================================
 
-  # API Gateway
   api-gateway:
     build: ./api-gateway
-    container_name: api-gateway
     hostname: api-gateway
-    ports:
-      - "8080:8080"
+    restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       REDIS_HOST: redis
       REDIS_PORT: 6379
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      RATE_LIMIT_REPLENISH: ${RATE_LIMIT_REPLENISH:-10}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-20}
     depends_on:
-      - redis
-      - eureka-server
-      - user-service
-      - product-service
-      - order-service
-      - inventory-service
-      - payment-service
+      eureka-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - frontend-net
+      - backend-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+    networks:
+      - frontend-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ============================================================
+# VOLUMES
+# ============================================================
 volumes:
-  postgres_user_data:
-  postgres_product_data:
-  postgres_order_data:
-  postgres_inventory_data:
-  postgres_payment_data:
+  postgres_data:
+  redis_data:
+
+    # ============================================================
+    # NETWORKS
+    # ============================================================
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
+  db-net:
+    driver: bridge

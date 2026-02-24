@@ -1,0 +1,73 @@
+# ============================================================
+# LOCAL DEVELOPMENT OVERRIDES
+# ============================================================
+# This file is auto-loaded by `docker compose up`.
+# It exposes all ports for local debugging & sets dev defaults.
+# ============================================================
+
+services:
+
+  # --- Database: expose on host for DBeaver / pgAdmin / IDE ---
+  # Host port 5499 avoids conflict with a locally installed PostgreSQL on 5432
+  postgres:
+    ports:
+      - "5499:5432"
+
+  # --- Redis ---
+  redis:
+    ports:
+      - "6379:6379"
+
+  # --- Kafka & Zookeeper ---
+  zookeeper:
+    ports:
+      - "2181:2181"
+
+  kafka:
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+
+  # --- Observability ---
+  zipkin:
+    ports:
+      - "9411:9411"
+
+  # --- Platform ---
+  eureka-server:
+    ports:
+      - "8761:8761"
+
+  config-server:
+    ports:
+      - "8888:8888"
+
+  # --- Application Services ---
+  user-service:
+    ports:
+      - "9002:9002"
+
+  product-service:
+    ports:
+      - "9003:9003"
+
+  inventory-service:
+    ports:
+      - "9005:9005"
+
+  order-service:
+    ports:
+      - "9004:9004"
+
+  payment-service:
+    ports:
+      - "9006:9006"
+
+  # --- Edge ---
+  api-gateway:
+    ports:
+      - "8080:8080"
+
+  frontend:
+    ports:
+      - "3000:80"
