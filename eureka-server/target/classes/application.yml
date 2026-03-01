@@ -8,25 +8,31 @@ spring:
   application:
     name: eureka-server
 
+server:
+  port: 8761
+
+# ===========================================
 # Eureka Server Configuration
+# ===========================================
 eureka:
   instance:
-    hostname: localhost
+    # Uses env variable if provided, otherwise defaults to eureka-server
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:eureka-server}
+
   client:
-    # Eureka Server does not need to fetch registry from another Eureka (it IS the registry)
+    # This application IS the registry
     register-with-eureka: false
     fetch-registry: false
-    service-url:
-      # Dashboard and API URL - where clients register
-      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+
   server:
-    # Enable self-preservation: in network partition, don't evict instances
-    # Set false in dev for faster failure detection
+    # Disable self-preservation for development
     enable-self-preservation: false
-    # Eviction task runs every 60 seconds to remove stale instances
+    # Faster cleanup of stale instances (5 seconds)
     eviction-interval-timer-in-ms: 5000
 
+# ===========================================
 # Actuator - expose health for Docker/K8s
+# ===========================================
 management:
   endpoints:
     web:
@@ -35,4 +41,3 @@ management:
   endpoint:
     health:
       show-details: ALWAYS
-#      show-details: when_authorized

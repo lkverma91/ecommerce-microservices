@@ -43,7 +43,7 @@
 
         <!--
         Spring Boot Actuator - exposes health check endpoints (/actuator/health)
-        Used by Docker/Kubernetes for liveness and readiness probes.
+        Used by Docker/Kubernetes for liveliness and readiness probes.
         -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
