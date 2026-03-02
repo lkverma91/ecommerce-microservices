@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ErrorDisplay } from '../components/ErrorBoundary';
+import { getOAuthLoginUrl } from '../api/authApi';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -65,6 +66,35 @@ export function LoginPage() {
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
+        <div className="relative my-4">
+          <span className="block text-center text-sm text-gray-500">or continue with</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <a
+            href={getOAuthLoginUrl('google')}
+            className="flex items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+          >
+            Google
+          </a>
+          <a
+            href={getOAuthLoginUrl('github')}
+            className="flex items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+          >
+            GitHub
+          </a>
+          <a
+            href={getOAuthLoginUrl('facebook')}
+            className="flex items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+          >
+            Facebook
+          </a>
+          <a
+            href={getOAuthLoginUrl('twitter')}
+            className="flex items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+          >
+            X (Twitter)
+          </a>
+        </div>
       </form>
       <p className="mt-4 text-center text-sm text-gray-600">
         No account? <Link to="/register" className="text-primary-600 hover:underline">Register</Link>

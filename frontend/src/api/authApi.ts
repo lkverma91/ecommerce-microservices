@@ -6,6 +6,7 @@ export interface User {
   name: string;
   phone?: string;
   active: boolean;
+  roles?: string[];
 }
 
 export interface LoginRequest {
@@ -25,24 +26,26 @@ export interface AuthResponse {
   user: User;
 }
 
-// Register: POST /api/users
-export const register = async (data: RegisterRequest): Promise<User> => {
-  const res = await axiosInstance.post('/users', data);
+// Register: POST /api/auth/register (returns token + user, no separate login needed)
+export const register = async (data: RegisterRequest): Promise<AuthResponse> => {
+  const res = await axiosInstance.post<AuthResponse>('/auth/register', data);
   return res.data;
 };
 
-// Login: POST /api/auth/login (backend to add) or dev fallback
+// Login: POST /api/auth/login
 export const login = async (data: LoginRequest): Promise<AuthResponse> => {
-  try {
-    const res = await axiosInstance.post<AuthResponse>('/auth/login', data);
-    return res.data;
-  } catch (err: unknown) {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    // Dev fallback: /auth/login not implemented - validate user exists
-    if (import.meta.env.DEV && (status === 404 || status === 501)) {
-      const res = await axiosInstance.get<User>(`/users/email/${encodeURIComponent(data.email)}`);
-      return { token: `dev-${res.data.id}-${Date.now()}`, user: res.data };
-    }
-    throw err;
-  }
+  const res = await axiosInstance.post<AuthResponse>('/auth/login', data);
+  return res.data;
+};
+
+// Current user from JWT (e.g. after OAuth callback). Requires Authorization header.
+export const getMe = async (): Promise<User> => {
+  const res = await axiosInstance.get<User>('/auth/me');
+  return res.data;
+};
+
+/** Base URL for OAuth2 authorization (redirect to backend). */
+export const getOAuthLoginUrl = (provider: string): string => {
+  const base = import.meta.env.VITE_API_BASE_URL || '/api';
+  return `${base}/auth/oauth2/authorization/${provider}`;
 };
