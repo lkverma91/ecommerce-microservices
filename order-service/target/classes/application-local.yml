@@ -3,6 +3,6 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5434/order_db
+    url: jdbc:postgresql://localhost:5432/order_db
   kafka:
     bootstrap-servers: localhost:9092

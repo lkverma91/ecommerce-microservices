@@ -13,7 +13,12 @@ All services use environment variables for production. Key variables:
 | `DATABASE_PASSWORD` | All DB services | DB password | (from secret) |
 | `KAFKA_BOOTSTRAP_SERVERS` | order, inventory, payment | Kafka brokers | host:9092 |
 | `ZIPKIN_URL` | All | Zipkin endpoint | http://zipkin:9411/api/v2/spans |
-| `JWT_SECRET` | api-gateway (future) | JWT signing secret | (from secret manager) |
+| `JWT_SECRET` | api-gateway, auth-service | JWT signing/validation (min 32 chars) | (from secret manager) |
+| `JWT_EXPIRATION_MS` | api-gateway, auth-service | Token TTL in ms | 86400000 |
+| `FRONTEND_BASE_URL` | auth-service | Frontend URL for OAuth callback redirect | https://app.example.com |
+| `OAUTH2_REDIRECT_URI_BASE` | auth-service | Base for OAuth redirect URI (gateway URL) | https://api.example.com/api/auth |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | auth-service | Google OAuth2 (optional) | from Google Cloud Console |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | auth-service | GitHub OAuth2 (optional) | from GitHub Developer Settings |
 | `REDIS_HOST` | api-gateway | Redis for rate limiting | redis |
 | `CORS_ALLOWED_ORIGINS` | api-gateway | Allowed origins | https://app.example.com |
 | `RATE_LIMIT_REPLENISH` | api-gateway | Requests per second | 10 |
@@ -36,8 +41,12 @@ KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 # Zipkin
 ZIPKIN_URL=http://zipkin:9411/api/v2/spans
 
-# Security - NEVER commit
+# Security - NEVER commit (min 32 characters for JWT HS256)
 JWT_SECRET=your-256-bit-secret-from-vault
+
+# Auth service (OAuth callback and frontend redirect)
+FRONTEND_BASE_URL=https://app.example.com
+OAUTH2_REDIRECT_URI_BASE=https://api.example.com/api/auth
 
 # API Gateway
 CORS_ALLOWED_ORIGINS=https://app.example.com
@@ -195,7 +204,8 @@ user-service:
 | Service | Scale when | Suggested replicas |
 |---------|------------|--------------------|
 | api-gateway | High traffic | 2–4 |
-| user-service | Many auth/profile requests | 2–3 |
+| auth-service | Many login/OAuth requests | 2–3 |
+| user-service | Many profile requests | 2–3 |
 | product-service | Catalog traffic | 2–4 |
 | order-service | Order volume | 2–4 |
 | inventory-service | Stock checks | 2 |

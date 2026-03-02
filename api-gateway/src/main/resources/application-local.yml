@@ -1,2 +1,3 @@
+# Local/dev: same port as prod so frontend proxy (localhost:8080) works without change
 server:
-  port: 8899
+  port: 8080

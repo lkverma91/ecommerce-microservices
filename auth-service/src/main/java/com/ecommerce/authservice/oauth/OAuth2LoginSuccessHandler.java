@@ -3,6 +3,7 @@ package com.ecommerce.authservice.oauth;
 import com.ecommerce.authservice.client.UserServiceClient;
 import com.ecommerce.authservice.dto.AuthUserResponse;
 import com.ecommerce.authservice.security.JwtUtil;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * After OAuth2 login success: find-or-create user, issue JWT, redirect to frontend callback with token.
@@ -39,7 +39,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException {
+                                        Authentication authentication) throws IOException, ServletException {
         if (!(authentication instanceof OAuth2AuthenticationToken token)) {
             super.onAuthenticationSuccess(request, response, authentication);
             return;

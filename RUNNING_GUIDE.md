@@ -4,6 +4,19 @@ Step-by-step guide to run both backend and frontend from scratch.
 
 ---
 
+## Local/Dev vs production (summary)
+
+| Goal | How to run | When to use |
+|------|------------|-------------|
+| **Local / dev (on your machine)** | **Option A (Docker):** `docker compose up -d --build` → http://localhost:3000. **Option B (Maven):** Start infra (Postgres, Redis, Kafka, Eureka) with Docker, then run each service with `mvn spring-boot:run -Dspring-boot.run.profiles=local`. Frontend: `cd frontend && npm run dev` → http://localhost:5173. | Day-to-day development, debugging. |
+| **Production-like (Docker)** | `docker compose up -d --build` (optionally with `.env` and `SPRING_PROFILES_ACTIVE=prod`). | Staging, production, or “run everything in one go” locally. |
+
+- **Local Maven:** Use profile `local` so services use localhost URLs and fixed ports (e.g. gateway 8080, Eureka 8761). You must start **Redis** (e.g. `docker compose up -d redis`) for the API Gateway. All DBs use the same Postgres instance on **port 5432** (user_db, product_db, order_db, inventory_db, payment_db).
+- **Docker Compose (dev/prod-like):** Uses profile `prod` for app services; all services talk via container names. No `.env` required for a quick run (defaults for JWT, DB, etc. are set).
+- **Production:** Use `cp .env.example .env`, set a strong `JWT_SECRET` (e.g. `openssl rand -base64 32`), then `docker compose up -d --build`. For full production checklist see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+---
+
 ## How to Run the Frontend
 
 | Mode | How to run | URL |
@@ -57,14 +70,15 @@ docker compose up -d --build
 - `--build` — Build images from Dockerfiles before starting (needed the first time)
 
 **What starts:**
-- 5 PostgreSQL databases (user, product, order, inventory, payment)
+- PostgreSQL (single instance with DBs: user_db, product_db, order_db, inventory_db, payment_db)
 - Zookeeper + Kafka
 - Redis
 - Zipkin
 - Eureka Server
 - Config Server
+- Auth Service (login, register, OAuth2, JWT)
 - User, Product, Order, Inventory, Payment services
-- API Gateway
+- API Gateway (JWT validation, routes to services)
 - Frontend
 
 ---
@@ -130,36 +144,34 @@ docker compose down -v
 
 Use when you want to run services on your machine without Docker (for debugging, profiling).
 
-### Step 1: Start infrastructure (PostgreSQL, Kafka, Redis)
+### Step 1: Start infrastructure (PostgreSQL, Redis, Kafka)
 
-You still need:
-- **PostgreSQL** (5 databases: user_db, product_db, order_db, inventory_db, payment_db)
-- **Kafka** (with Zookeeper)
-- **Redis**
+You need:
+- **PostgreSQL** — single instance with DBs: user_db, product_db, order_db, inventory_db, payment_db (created by init script on first start)
+- **Redis** — required by API Gateway for rate limiting
+- **Kafka** (with Zookeeper) — required for order, inventory, payment services
 
-**Option B1: Run only infra with Docker**
+**Option B1: Run only infra with Docker (recommended)**
 
 ```bash
-docker compose up -d postgres-user postgres-product postgres-order postgres-inventory postgres-payment zookeeper kafka redis zipkin
+docker compose up -d postgres redis zookeeper kafka
 ```
 
-**Explanation:** Starts only databases, Kafka, Redis, and Zipkin.
+**Optional:** Add Zipkin (tracing) and Eureka (so you can start gateway and microservices and they register):
+
+```bash
+docker compose up -d postgres redis zookeeper kafka zipkin eureka-server
+```
+
+**Explanation:** One Postgres container on port 5432; init script `init-db/01-create-databases.sh` creates all five databases on first run.
 
 ---
 
-### Step 2: Create databases
+### Step 2: Databases
 
-Each Postgres container creates one DB. Ports:
+**If you used Docker for Postgres (Step 1):** The init script already created `user_db`, `product_db`, `order_db`, `inventory_db`, `payment_db`. Nothing to do.
 
-| DB | Port | Database name |
-|----|------|---------------|
-| user | 5432 | user_db |
-| product | 5433 | product_db |
-| order | 5434 | order_db |
-| inventory | 5435 | inventory_db |
-| payment | 5436 | payment_db |
-
-If you run PostgreSQL locally, create these databases:
+**If you run PostgreSQL locally** (e.g. installed on your machine), create the databases:
 
 ```sql
 CREATE DATABASE user_db;
@@ -168,6 +180,8 @@ CREATE DATABASE order_db;
 CREATE DATABASE inventory_db;
 CREATE DATABASE payment_db;
 ```
+
+Postgres is on **port 5432** (single instance).
 
 ---
 
@@ -202,36 +216,41 @@ mvn spring-boot:run -Dspring-boot.run.profiles=local
 
 ### Step 5: Start domain services (order can be last)
 
-Open separate terminals. Order does not matter, but Order Service needs User, Product, and Inventory.
+Open separate terminals. Start **user-service** before **auth-service** (auth calls user-service). Order Service needs User, Product, and Inventory.
 
 ```bash
-# Terminal 3 - User Service
+# Terminal 3 - User Service (start first; auth-service depends on it)
 cd user-service
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 
-# Terminal 4 - Product Service
+# Terminal 4 - Auth Service (login, register, JWT, OAuth)
+cd auth-service
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+
+# Terminal 5 - Product Service
 cd product-service
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 
-# Terminal 5 - Inventory Service
+# Terminal 6 - Inventory Service
 cd inventory-service
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 
-# Terminal 6 - Payment Service
+# Terminal 7 - Payment Service
 cd payment-service
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 
-# Terminal 7 - Order Service
+# Terminal 8 - Order Service
 cd order-service
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 **Ports:**
+- auth-service: 9001
 - user-service: 9002
 - product-service: 9003
+- order-service: 9004
 - inventory-service: 9005
 - payment-service: 9006
-- order-service: 9004
 
 ---
 
@@ -242,8 +261,8 @@ cd api-gateway
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-**Port:** 8080  
-**Requires:** Redis on localhost:6379 (start via Docker if needed).
+**Port:** 8080 (same as frontend proxy in `vite.config.ts`)  
+**Requires:** Redis on localhost:6379. If you didn’t start Redis in Step 1, run: `docker compose up -d redis`
 
 ---
 
@@ -327,19 +346,28 @@ curl http://localhost:8080/actuator/health
 # Open: http://localhost:8761
 ```
 
-### Create a user
+### Register and login
 
 ```bash
-curl -X POST http://localhost:8080/api/users \
+# Register (returns JWT and user)
+curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"test@example.com\",\"name\":\"Test User\",\"password\":\"secret123\"}"
+
+# Login (returns JWT and user)
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"test@example.com\",\"password\":\"secret123\"}"
 ```
 
-### Create a product
+Use the `token` from the response in the `Authorization: Bearer <token>` header for protected endpoints.
+
+### Create a product (requires JWT with role ADMIN)
 
 ```bash
 curl -X POST http://localhost:8080/api/products \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d "{\"name\":\"Laptop\",\"description\":\"Good laptop\",\"price\":999.99,\"category\":\"Electronics\"}"
 ```
 
@@ -351,11 +379,12 @@ curl -X POST http://localhost:8080/api/inventory \
   -d "{\"productId\":1,\"quantity\":100}"
 ```
 
-### Place order
+### Place order (requires JWT)
 
 ```bash
 curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d "{\"userId\":1,\"items\":[{\"productId\":1,\"quantity\":2}]}"
 ```
 
@@ -383,16 +412,13 @@ curl -X POST http://localhost:8080/api/orders \
 | API Gateway | 8080 |
 | Eureka | 8761 |
 | Config Server | 8888 |
+| Auth Service | 9001 |
 | User Service | 9002 |
 | Product Service | 9003 |
 | Order Service | 9004 |
 | Inventory Service | 9005 |
 | Payment Service | 9006 |
 | Zipkin | 9411 |
-| PostgreSQL (user) | 5432 |
-| PostgreSQL (product) | 5433 |
-| PostgreSQL (order) | 5434 |
-| PostgreSQL (inventory) | 5435 |
-| PostgreSQL (payment) | 5436 |
+| PostgreSQL (single instance, all DBs) | 5432 |
 | Kafka | 9092 |
 | Redis | 6379 |
