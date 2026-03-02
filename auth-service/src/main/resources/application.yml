@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: auth-service
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope: openid,profile,email
+            redirect-uri: "${OAUTH2_REDIRECT_URI_BASE:http://localhost:8080/api/auth}/login/oauth2/code/{registrationId}"
+          github:
+            client-id: ${GITHUB_CLIENT_ID:}
+            client-secret: ${GITHUB_CLIENT_SECRET:}
+            scope: read:user,user:email
+            redirect-uri: "${OAUTH2_REDIRECT_URI_BASE:http://localhost:8080/api/auth}/login/oauth2/code/{registrationId}"
+          facebook:
+            client-id: ${FACEBOOK_CLIENT_ID:}
+            client-secret: ${FACEBOOK_CLIENT_SECRET:}
+            scope: email,public_profile
+            redirect-uri: "${OAUTH2_REDIRECT_URI_BASE:http://localhost:8080/api/auth}/login/oauth2/code/{registrationId}"
+          twitter:
+            client-id: ${TWITTER_CLIENT_ID:}
+            client-secret: ${TWITTER_CLIENT_SECRET:}
+            redirect-uri: "${OAUTH2_REDIRECT_URI_BASE:http://localhost:8080/api/auth}/login/oauth2/code/{registrationId}"
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            scope: tweet.read,users.read,offline.access
+        provider:
+          twitter:
+            authorization-uri: https://x.com/i/oauth2/authorize
+            token-uri: https://api.x.com/2/oauth2/token
+            user-info-uri: https://api.x.com/2/users/me
+            user-name-attribute: data
+            jwk-set-uri: https://api.x.com/2/oauth2/token
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+
+# JWT - same secret as gateway for validation
+jwt:
+  secret: ${JWT_SECRET:change-me-in-production-use-env-var}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+# Frontend URL for OAuth redirect after login (callback page)
+frontend:
+  base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
+  auth-callback-path: ${FRONTEND_AUTH_CALLBACK_PATH:/auth/callback}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_PROBABILITY:0.1}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
