@@ -1,0 +1,8 @@
+# Dependencies and build output (rebuilt inside container)
+node_modules
+dist
+.git
+*.md
+.env
+.env.*
+!.env.example
