@@ -159,6 +159,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       EUREKA_URI: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: config-server
     depends_on:
       eureka-server:
         condition: service_healthy
