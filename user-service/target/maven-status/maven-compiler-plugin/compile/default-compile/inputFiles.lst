@@ -1,0 +1,16 @@
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\dto\UserResponse.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\exception\GlobalExceptionHandler.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\exception\ResourceNotFoundException.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\service\UserService.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\entity\User.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\exception\DuplicateResourceException.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\exception\ErrorResponse.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\dto\FindOrCreateOAuthRequest.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\entity\AuthProvider.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\repository\UserRepository.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\dto\ValidateCredentialsRequest.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\controller\UserController.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\controller\InternalAuthController.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\dto\UserRequest.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\UserServiceApplication.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\user-service\src\main\java\com\ecommerce\userservice\config\SecurityConfig.java

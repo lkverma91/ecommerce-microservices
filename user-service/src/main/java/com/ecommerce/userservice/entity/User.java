@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -26,8 +28,22 @@ public class User {
 
     private String phone;
 
-    @Column(nullable = false)
+    /** Nullable for OAuth-only users (no password). */
     private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    /** Provider's user id (e.g. Google sub). Null for LOCAL. */
+    private String providerId;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "role")
+    @Builder.Default
+    private List<String> roles = new ArrayList<>();
 
     @Column(nullable = false)
     @Builder.Default

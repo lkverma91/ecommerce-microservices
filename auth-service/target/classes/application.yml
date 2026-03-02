@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: auth-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+
+# JWT - same secret as gateway for validation
+jwt:
+  secret: ${JWT_SECRET:change-me-in-production-use-env-var}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+# Frontend URL for OAuth redirect after login (callback page)
+frontend:
+  base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
+  auth-callback-path: ${FRONTEND_AUTH_CALLBACK_PATH:/auth/callback}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLE_PROBABILITY:0.1}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}

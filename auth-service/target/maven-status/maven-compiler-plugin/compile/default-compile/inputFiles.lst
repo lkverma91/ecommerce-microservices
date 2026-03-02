@@ -1,0 +1,11 @@
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\config\WebSecurityConfig.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\AuthServiceApplication.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\client\UserServiceClient.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\dto\AuthUserResponse.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\dto\RegisterRequest.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\controller\AuthController.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\security\JwtUtil.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\dto\AuthResponse.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\dto\LoginRequest.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\service\AuthService.java
+D:\SpringBootWorkSpace\cursor-ai-demo\ecommerce-microservices\auth-service\src\main\java\com\ecommerce\authservice\config\WebClientConfig.java

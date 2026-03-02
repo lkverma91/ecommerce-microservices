@@ -2,22 +2,29 @@ package com.ecommerce.userservice.service;
 
 import com.ecommerce.userservice.dto.UserRequest;
 import com.ecommerce.userservice.dto.UserResponse;
+import com.ecommerce.userservice.entity.AuthProvider;
 import com.ecommerce.userservice.entity.User;
 import com.ecommerce.userservice.exception.ResourceNotFoundException;
 import com.ecommerce.userservice.exception.DuplicateResourceException;
 import com.ecommerce.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final String DEFAULT_ROLE = "USER";
+
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserResponse createUser(UserRequest request) {
@@ -28,8 +35,10 @@ public class UserService {
                 .email(request.getEmail())
                 .name(request.getName())
                 .phone(request.getPhone())
-                .passwordHash(request.getPassword()) // TODO: Use BCrypt in production
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .authProvider(AuthProvider.LOCAL)
                 .active(true)
+                .roles(new ArrayList<>(List.of(DEFAULT_ROLE)))
                 .build();
         user = userRepository.save(user);
         return mapToResponse(user);
@@ -64,7 +73,7 @@ public class UserService {
         user.setName(request.getName());
         user.setPhone(request.getPhone());
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-            user.setPasswordHash(request.getPassword()); // TODO: BCrypt
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }
         user = userRepository.save(user);
         return mapToResponse(user);
@@ -78,6 +87,46 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
+    /**
+     * Validates email/password for auth-service. Returns empty if not found or password invalid.
+     */
+    public Optional<UserResponse> validateCredentials(String email, String password) {
+        return userRepository.findByEmail(email)
+                .filter(u -> u.getPasswordHash() != null && passwordEncoder.matches(password, u.getPasswordHash()))
+                .filter(User::getActive)
+                .map(this::mapToResponse);
+    }
+
+    /**
+     * Find user by OAuth provider id, or create new user. Used by auth-service after OAuth callback.
+     */
+    @Transactional
+    public UserResponse findOrCreateByOAuth(AuthProvider authProvider, String providerId, String email, String name) {
+        return userRepository.findByAuthProviderAndProviderId(authProvider, providerId)
+                .map(this::mapToResponse)
+                .orElseGet(() -> {
+                    User user = userRepository.findByEmail(email).orElse(null);
+                    if (user != null) {
+                        user.setAuthProvider(authProvider);
+                        user.setProviderId(providerId);
+                        if (user.getRoles() == null || user.getRoles().isEmpty()) {
+                            user.setRoles(new ArrayList<>(List.of(DEFAULT_ROLE)));
+                        }
+                        return mapToResponse(userRepository.save(user));
+                    }
+                    User newUser = User.builder()
+                            .email(email)
+                            .name(name != null && !name.isBlank() ? name : email)
+                            .passwordHash(null)
+                            .authProvider(authProvider)
+                            .providerId(providerId)
+                            .active(true)
+                            .roles(new ArrayList<>(List.of(DEFAULT_ROLE)))
+                            .build();
+                    return mapToResponse(userRepository.save(newUser));
+                });
+    }
+
     private UserResponse mapToResponse(User user) {
         return UserResponse.builder()
                 .id(user.getId())
@@ -85,6 +134,7 @@ public class UserService {
                 .name(user.getName())
                 .phone(user.getPhone())
                 .active(user.getActive())
+                .roles(user.getRoles() != null ? new ArrayList<>(user.getRoles()) : List.of())
                 .createdAt(user.getCreatedAt())
                 .build();
     }
