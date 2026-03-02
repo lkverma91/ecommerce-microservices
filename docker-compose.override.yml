@@ -1,4 +1,15 @@
-# ============================================================
+# This docker-compose.override.yml file provides overrides for the main docker-compose.yml,
+# specifically tailored for local development and debugging.
+# 
+# By default, Docker Compose automatically loads both docker-compose.yml and
+# docker-compose.override.yml when you run 'docker compose up' (unless you specify -f).
+# 
+# Key reasons for this override file:
+# - Exposes all service ports on the host for easy debugging (e.g., with IDEs or database tools).
+# - Sets configuration and environment variables optimized for local development (not production).
+# - Offers a safe way to customize development behavior without changing the main compose file.
+# 
+# This keeps the main configuration production-ready, while allowing easy local modifications.
 # LOCAL DEVELOPMENT OVERRIDES
 # ============================================================
 # This file is auto-loaded by `docker compose up`.

@@ -4,6 +4,18 @@ Step-by-step guide to run both backend and frontend from scratch.
 
 ---
 
+## How to Run the Frontend
+
+| Mode | How to run | URL |
+|------|------------|-----|
+| **With Docker (full stack)** | `docker compose up -d --build` then open in browser | **http://localhost:3000** |
+| **Frontend only (local dev)** | `cd frontend` → `npm install` → `npm run dev` | **http://localhost:5173** |
+
+- **Docker:** Frontend is built (Vite) and served by nginx. API calls go to `/api` and are proxied to the API Gateway. Ensure API Gateway is running (e.g. full `docker compose up`).
+- **Local dev:** Vite dev server proxies `/api` to `http://localhost:8080`. Start the API Gateway (and backend services) first if you need real API calls.
+
+---
+
 ## Prerequisites
 
 | Tool | Version | Purpose | How to check |
