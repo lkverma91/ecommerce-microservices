@@ -57,14 +57,15 @@ docker compose up -d --build
 - `--build` — Build images from Dockerfiles before starting (needed the first time)
 
 **What starts:**
-- 5 PostgreSQL databases (user, product, order, inventory, payment)
+- PostgreSQL (single instance with DBs: user_db, product_db, order_db, inventory_db, payment_db)
 - Zookeeper + Kafka
 - Redis
 - Zipkin
 - Eureka Server
 - Config Server
+- Auth Service (login, register, OAuth2, JWT)
 - User, Product, Order, Inventory, Payment services
-- API Gateway
+- API Gateway (JWT validation, routes to services)
 - Frontend
 
 ---

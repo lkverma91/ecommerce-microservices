@@ -8,9 +8,10 @@ Spring Boot microservices with Eureka, API Gateway, Kafka, PostgreSQL, OpenFeign
 |---------|------|-------------|
 | Eureka Server | 8761 | Service discovery |
 | Config Server | 8888 | Centralized configuration |
-| API Gateway | 8080 | Route `/api/*` to services |
-| User Service | 9002 | User management |
-| Product Service | 9003 | Product catalog |
+| API Gateway | 8080 | Route `/api/*` to services, JWT validation |
+| **Auth Service** | 9001 (local) | Login, register, OAuth2 (Google/GitHub/Facebook/Twitter), JWT issuance |
+| User Service | 9002 | User management, BCrypt, OAuth linking |
+| Product Service | 9003 | Product catalog (admin write protected by role) |
 | Order Service | 9004 | Order creation, Feign + Kafka |
 | Inventory Service | 9005 | Stock, Kafka consumer |
 | Payment Service | 9006 | Payments, Kafka consumer |
@@ -23,16 +24,18 @@ See **[RUNNING_GUIDE.md](RUNNING_GUIDE.md)** for step-by-step instructions from 
 ## Run with Docker Compose
 
 ```bash
-# Start all services (includes Redis, Zipkin)
-docker-compose up -d
+# From project root - start all services (Postgres, Redis, Kafka, Zipkin, Eureka, Config, Auth, User, Product, Order, Inventory, Payment, API Gateway, Frontend)
+docker compose up -d --build
 
-# With custom env (e.g. JWT_SECRET)
-JWT_SECRET=your-secret docker-compose up -d
+# Optional: use a .env file for secrets (copy from .env.example)
+cp .env.example .env
+# Edit .env: set JWT_SECRET (min 32 chars for JWT), and OAuth client ids if using social login
+docker compose up -d --build
 ```
 
-Start infra only (DBs + Kafka):
+Start infrastructure only (single Postgres with all DBs, Redis, Zookeeper, Kafka):
 ```bash
-docker-compose up -d postgres-user postgres-product postgres-order postgres-inventory postgres-payment zookeeper kafka
+docker compose up -d postgres redis zookeeper kafka
 ```
 
 ## Run Locally (Maven)
@@ -45,9 +48,9 @@ docker-compose up -d postgres-user postgres-product postgres-order postgres-inve
 
 All requests go through **API Gateway** at `http://localhost:8080`.
 
-### User Service
+### Authentication (Auth Service)
 ```http
-POST /api/users
+POST /api/auth/register
 Content-Type: application/json
 
 {
@@ -57,17 +60,28 @@ Content-Type: application/json
   "password": "secret123"
 }
 
-Response 201:
-{
-  "id": 1,
-  "email": "john@example.com",
-  "name": "John Doe",
-  "phone": "+1234567890",
-  "active": true,
-  "createdAt": "2025-02-22T10:00:00"
-}
+Response 201: { "token": "<JWT>", "user": { "id", "email", "name", "roles", ... } }
 
-GET /api/users/1
+POST /api/auth/login
+Content-Type: application/json
+
+{ "email": "john@example.com", "password": "secret123" }
+
+Response 200: { "token": "<JWT>", "user": { ... } }
+
+GET /api/auth/me
+Authorization: Bearer <JWT>
+Response 200: { "id", "email", "name", "roles", ... }
+```
+
+**Social login:** Redirect the browser to `GET /api/auth/oauth2/authorization/{google|github|facebook|twitter}`. After provider login, backend redirects to frontend `/auth/callback?token=<JWT>`.
+
+**Protected routes:** Send `Authorization: Bearer <token>` for `/api/users/**`, `/api/orders/**`, `/api/products/**` (write), etc. Gateway validates JWT and forwards `X-User-Id` and `X-User-Roles`.
+
+### User Service (requires JWT for most endpoints)
+```http
+POST /api/auth/register   # use this to create account (returns token)
+GET /api/users/1          # requires Authorization: Bearer <token>
 GET /api/users
 GET /api/users/email/john@example.com
 PUT /api/users/1
@@ -76,8 +90,9 @@ DELETE /api/users/1
 
 ### Product Service
 ```http
-POST /api/products
+POST /api/products   # requires JWT with role ADMIN
 Content-Type: application/json
+Authorization: Bearer <token>
 
 {
   "name": "Laptop",
@@ -183,6 +198,7 @@ Payments are created asynchronously when an order is placed (Kafka consumer).
 - Java 17, Spring Boot 3.2
 - PostgreSQL, JPA/Hibernate
 - Eureka, Spring Cloud Gateway
+- **Auth:** JWT (jjwt), BCrypt, Spring Security OAuth2 Client (Google, GitHub, Facebook, Twitter)
 - OpenFeign, Kafka
 - Docker, Docker Compose
 - Zipkin (tracing), Redis (rate limiting)
@@ -202,9 +218,20 @@ See [frontend/README.md](frontend/README.md) for details.
 - **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** — Request flow, JWT, Kafka, Postman, testing, monitoring, scaling, CI/CD
 - **Postman** — Import `postman/E-commerce-API.postman_collection.json`
 
+## How to run (summary)
+
+| Goal | Command |
+|------|---------|
+| **Full stack (Docker)** | `docker compose up -d --build` → open http://localhost:3000 |
+| **Optional .env** | `cp .env.example .env` then edit (set `JWT_SECRET` for production; add OAuth client ids for social login) |
+| **Frontend only (dev)** | `cd frontend && npm install && npm run dev` → http://localhost:5173 (start gateway + backend separately for API) |
+| **Backend only (Maven)** | Start Eureka, then config-server, auth-service, user-service, product-service, order-service, inventory-service, payment-service, api-gateway (see [RUNNING_GUIDE.md](RUNNING_GUIDE.md)) |
+
+After `docker compose up`, use the app at **http://localhost:3000**: register or log in (email/password or social if OAuth is configured). Product create/update/delete require a user with role `ADMIN` (assign in DB if needed).
+
 ## Production
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for:
 - AWS EC2 deployment
-- Environment variable configuration
+- Environment variable configuration (including JWT and OAuth)
 - Scaling and security

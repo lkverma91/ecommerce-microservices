@@ -188,7 +188,7 @@ services:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: auth-service
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      JWT_SECRET: ${JWT_SECRET:-my-local-dev-secret-change-in-production-use-32-chars}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3000}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
@@ -358,7 +358,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      JWT_SECRET: ${JWT_SECRET:-my-local-dev-secret-change-in-production-use-32-chars}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
       RATE_LIMIT_REPLENISH: ${RATE_LIMIT_REPLENISH:-10}
       RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-20}

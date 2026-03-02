@@ -18,7 +18,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * After OAuth2 login success: find-or-create user, issue JWT, redirect to frontend callback with token.
