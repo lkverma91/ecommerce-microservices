@@ -3,6 +3,6 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/product_db
+    url: jdbc:postgresql://localhost:5432/product_db
   jpa:
     show-sql: true

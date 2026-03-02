@@ -38,11 +38,16 @@ Start infrastructure only (single Postgres with all DBs, Redis, Zookeeper, Kafka
 docker compose up -d postgres redis zookeeper kafka
 ```
 
-## Run Locally (Maven)
+## Run locally / dev (Maven)
 
-1. Start PostgreSQL (one DB per service) and Kafka.
-2. Start Eureka: `cd eureka-server && mvn spring-boot:run -Dspring-boot.run.profiles=local`
-3. Start services in order: config-server, user-service, product-service, inventory-service, payment-service, order-service, api-gateway.
+1. **Infra:** Start Postgres, Redis, Kafka (and optionally Eureka):  
+   `docker compose up -d postgres redis zookeeper kafka`  
+   Optional: add `zipkin eureka-server` to the same command.
+2. **Eureka:** `cd eureka-server && mvn spring-boot:run -Dspring-boot.run.profiles=local`
+3. **Services** (each in its own terminal, profile `local`): config-server → user-service → auth-service → product-service → inventory-service → payment-service → order-service → api-gateway.
+4. **Frontend:** `cd frontend && npm install && npm run dev` → http://localhost:5173 (proxies `/api` to gateway on 8080).
+
+See **[RUNNING_GUIDE.md](RUNNING_GUIDE.md)** for the full order and commands.
 
 ## Sample APIs
 
