@@ -157,8 +157,9 @@ services:
     hostname: config-server
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: config-server
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -185,7 +186,7 @@ services:
     hostname: auth-service
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: auth-service
       JWT_SECRET: ${JWT_SECRET:-my-local-dev-secret-change-in-production-use-32-chars}
@@ -210,7 +211,7 @@ services:
     hostname: user-service
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: user-service
       DATABASE_URL: jdbc:postgresql://postgres:5432/user_db
@@ -236,7 +237,7 @@ services:
     hostname: product-service
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: product-service
       DATABASE_URL: jdbc:postgresql://postgres:5432/product_db
@@ -262,7 +263,7 @@ services:
     hostname: inventory-service
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: inventory-service
       DATABASE_URL: jdbc:postgresql://postgres:5432/inventory_db
@@ -291,7 +292,7 @@ services:
     hostname: order-service
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: order-service
       DATABASE_URL: jdbc:postgresql://postgres:5432/order_db
@@ -320,7 +321,7 @@ services:
     hostname: payment-service
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: payment-service
       DATABASE_URL: jdbc:postgresql://postgres:5432/payment_db
@@ -353,7 +354,7 @@ services:
     hostname: api-gateway
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
       EUREKA_URI: http://eureka-server:8761/eureka/
       REDIS_HOST: redis
       REDIS_PORT: 6379
